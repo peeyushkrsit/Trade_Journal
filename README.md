@@ -249,3 +249,4 @@ MIT License - see LICENSE file
 
 For issues and questions, please check the documentation or create an issue in the repository.
 
+# Trade_Journal
