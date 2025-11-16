@@ -15,6 +15,10 @@ export default function LandingPage() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
+    let retryCount = 0;
+    const maxRetries = 10;
+    let unsubscribe = null;
+    
     const initAuth = () => {
       if (!auth) {
         initializeFirebase();
@@ -22,18 +26,34 @@ export default function LandingPage() {
       const instance = getAuthInstance();
       if (instance) {
         // Set up auth state listener
-        const unsubscribe = onAuthStateChanged(instance, (user) => {
+        unsubscribe = onAuthStateChanged(instance, (user) => {
           setUser(user);
           setLoading(false);
         });
-        return () => unsubscribe();
+        return unsubscribe;
       } else {
-        setTimeout(initAuth, 100);
+        retryCount++;
+        if (retryCount < maxRetries) {
+          setTimeout(initAuth, 200);
+        } else {
+          setLoading(false);
+        }
       }
     };
     
     const cleanup = initAuth();
-    return cleanup;
+    
+    // Timeout fallback - stop loading after 5 seconds max
+    const timeout = setTimeout(() => {
+      console.warn('Auth initialization timeout - proceeding anyway');
+      setLoading(false);
+    }, 5000);
+    
+    return () => {
+      if (cleanup && typeof cleanup === 'function') cleanup();
+      if (unsubscribe && typeof unsubscribe === 'function') unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   useEffect(() => {
