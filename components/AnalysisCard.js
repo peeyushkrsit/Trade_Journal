@@ -1,13 +1,25 @@
 'use client';
 
-import { useState } from 'react';
-import { useAuthState } from 'react-firebase-hooks/auth';
+import { useState, useEffect } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/clientFirebase';
+import { auth, db, getAuthInstance } from '@/lib/clientFirebase';
 import toast from 'react-hot-toast';
 
 export default function AnalysisCard({ tradeId, analysis, onUpdate }) {
-  const [user] = useAuthState(auth || null);
+  const [user, setUser] = useState(null);
+  
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const instance = getAuthInstance();
+    if (instance) {
+      const unsubscribe = onAuthStateChanged(instance, (user) => {
+        setUser(user);
+      });
+      return () => unsubscribe();
+    }
+  }, []);
   const [markingLearned, setMarkingLearned] = useState(false);
 
   const handleMarkLearned = async () => {

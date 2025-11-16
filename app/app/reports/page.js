@@ -1,15 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuthState } from 'react-firebase-hooks/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 import { collection, query, getDocs } from 'firebase/firestore';
-import { auth, db } from '@/lib/clientFirebase';
+import { auth, db, getAuthInstance } from '@/lib/clientFirebase';
 import ExportCSV, { exportTradesToCSV } from '@/components/ExportCSV';
 import { formatCurrency, formatPercent } from '@/lib/utils';
 import { Download, FileText } from 'lucide-react';
 
 export default function ReportsPage() {
-  const [user] = useAuthState(auth || null);
+  const [user, setUser] = useState(null);
   const [trades, setTrades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -22,6 +22,19 @@ export default function ReportsPage() {
     largestWin: 0,
     largestLoss: 0,
   });
+
+  // Listen to auth state changes
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const instance = getAuthInstance();
+    if (instance) {
+      const unsubscribe = onAuthStateChanged(instance, (user) => {
+        setUser(user);
+      });
+      return () => unsubscribe();
+    }
+  }, []);
 
   useEffect(() => {
     if (!user) return;

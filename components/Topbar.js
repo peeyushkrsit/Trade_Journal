@@ -1,14 +1,26 @@
 'use client';
 
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { signOut } from 'firebase/auth';
-import { auth } from '@/lib/clientFirebase';
+import { useEffect, useState } from 'react';
+import { signOut, onAuthStateChanged } from 'firebase/auth';
+import { auth, getAuthInstance } from '@/lib/clientFirebase';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
 export default function Topbar() {
-  const [user] = useAuthState(auth || null);
+  const [user, setUser] = useState(null);
   const router = useRouter();
+  
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const instance = getAuthInstance();
+    if (instance) {
+      const unsubscribe = onAuthStateChanged(instance, (user) => {
+        setUser(user);
+      });
+      return () => unsubscribe();
+    }
+  }, []);
 
   const handleSignOut = async () => {
     if (!auth) return;

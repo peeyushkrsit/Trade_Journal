@@ -1,12 +1,24 @@
 'use client';
 
-import { useState } from 'react';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '@/lib/clientFirebase';
+import { useState, useEffect } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth, getAuthInstance } from '@/lib/clientFirebase';
 import { MessageSquare, Send } from 'lucide-react';
 
 export default function CoachPage() {
-  const [user] = useAuthState(auth || null);
+  const [user, setUser] = useState(null);
+  
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const instance = getAuthInstance();
+    if (instance) {
+      const unsubscribe = onAuthStateChanged(instance, (user) => {
+        setUser(user);
+      });
+      return () => unsubscribe();
+    }
+  }, []);
   const [messages, setMessages] = useState([
     {
       role: 'assistant',

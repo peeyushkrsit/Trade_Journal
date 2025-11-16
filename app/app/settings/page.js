@@ -1,18 +1,31 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAuthState } from 'react-firebase-hooks/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { doc, getDoc, updateDoc, deleteDoc, collection, getDocs, query } from 'firebase/firestore';
 import { deleteUser, updateProfile } from 'firebase/auth';
 import { ref, listAll, deleteObject } from 'firebase/storage';
-import { auth, db, storage } from '@/lib/clientFirebase';
+import { auth, db, storage, getAuthInstance } from '@/lib/clientFirebase';
 import toast from 'react-hot-toast';
 import { Trash2, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function SettingsPage() {
-  const [user] = useAuthState(auth || null);
+  const [user, setUser] = useState(null);
+  
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const instance = getAuthInstance();
+    if (instance) {
+      const unsubscribe = onAuthStateChanged(instance, (user) => {
+        setUser(user);
+      });
+      return () => unsubscribe();
+    }
+  }, []);
+  
   const router = useRouter();
   const [userData, setUserData] = useState(null);
   const [displayName, setDisplayName] = useState('');

@@ -1,8 +1,14 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
-import { Toaster } from 'react-hot-toast'
+import dynamic from 'next/dynamic'
 
 const inter = Inter({ subsets: ['latin'] })
+
+// Lazy load Toaster to reduce initial bundle
+const Toaster = dynamic(
+  () => import('react-hot-toast').then((mod) => mod.Toaster),
+  { ssr: false }
+)
 
 export const metadata = {
   title: 'TradeJournal - AI Trade Journal & Emotional Coach',

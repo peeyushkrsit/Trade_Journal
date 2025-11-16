@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuthState } from 'react-firebase-hooks/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
-import { auth, db } from '@/lib/clientFirebase';
+import { auth, db, getAuthInstance } from '@/lib/clientFirebase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import StatsCard from '@/components/StatsCard';
@@ -11,7 +11,7 @@ import TradeTable from '@/components/TradeTable';
 import { TrendingUp, TrendingDown, Target, Plus } from 'lucide-react';
 
 export default function DashboardPage() {
-  const [user] = useAuthState(auth || null);
+  const [user, setUser] = useState(null);
   const router = useRouter();
   const [trades, setTrades] = useState([]);
   const [stats, setStats] = useState({
@@ -20,6 +20,19 @@ export default function DashboardPage() {
     tradesThisMonth: 0,
   });
   const [loading, setLoading] = useState(true);
+
+  // Listen to auth state changes
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const instance = getAuthInstance();
+    if (instance) {
+      const unsubscribe = onAuthStateChanged(instance, (user) => {
+        setUser(user);
+      });
+      return () => unsubscribe();
+    }
+  }, []);
 
   useEffect(() => {
     if (!user) return;

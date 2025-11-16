@@ -1,9 +1,18 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { createWorker } from 'tesseract.js';
 import { sanitizeOCRText, extractTradeDataFromOCR } from '@/lib/utils';
 import toast from 'react-hot-toast';
+
+// Lazy load Tesseract.js to reduce initial bundle size (~2MB saved on initial load)
+let createWorker;
+const loadTesseract = async () => {
+  if (!createWorker) {
+    const tesseract = await import('tesseract.js');
+    createWorker = tesseract.createWorker;
+  }
+  return createWorker;
+};
 
 export default function FileUploader({ onOCRComplete, onDataExtracted, onFileSelect }) {
   const [file, setFile] = useState(null);
@@ -61,7 +70,9 @@ export default function FileUploader({ onOCRComplete, onDataExtracted, onFileSel
 
     setProcessing(true);
     try {
-      const worker = await createWorker('eng');
+      // Dynamically load Tesseract.js only when needed
+      const createWorkerFn = await loadTesseract();
+      const worker = await createWorkerFn('eng');
       const { data: { text } } = await worker.recognize(file);
       await worker.terminate();
 

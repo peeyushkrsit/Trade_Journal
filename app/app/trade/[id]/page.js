@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { doc, getDoc, httpsCallable } from 'firebase/firestore';
-import { auth, db, functions } from '@/lib/clientFirebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
+import { auth, db, functions, getAuthInstance } from '@/lib/clientFirebase';
 import AnalysisCard from '@/components/AnalysisCard';
 import { formatCurrency, formatPercent, formatDate } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -14,7 +15,19 @@ import jsPDF from 'jspdf';
 export default function TradeDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const [user] = useAuthState(auth || null);
+  const [user, setUser] = useState(null);
+  
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const instance = getAuthInstance();
+    if (instance) {
+      const unsubscribe = onAuthStateChanged(instance, (user) => {
+        setUser(user);
+      });
+      return () => unsubscribe();
+    }
+  }, []);
   const [trade, setTrade] = useState(null);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);

@@ -1,18 +1,31 @@
 'use client';
 
-import { useState } from 'react';
-import { useAuthState } from 'react-firebase-hooks/auth';
+import { useState, useEffect } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { httpsCallable } from 'firebase/functions';
-import { auth, db, storage, functions } from '@/lib/clientFirebase';
+import { auth, db, storage, functions, getAuthInstance } from '@/lib/clientFirebase';
 import FileUploader from '@/components/FileUploader';
 import toast from 'react-hot-toast';
 import { calculatePositionSize, sanitizeOCRText } from '@/lib/utils';
 
 export default function NewTradePage() {
-  const [user] = useAuthState(auth || null);
+  const [user, setUser] = useState(null);
+  
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const instance = getAuthInstance();
+    if (instance) {
+      const unsubscribe = onAuthStateChanged(instance, (user) => {
+        setUser(user);
+      });
+      return () => unsubscribe();
+    }
+  }, []);
+  
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [ocrText, setOcrText] = useState('');

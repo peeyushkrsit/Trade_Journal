@@ -1,16 +1,29 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuthState } from 'react-firebase-hooks/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 import { collection, query, orderBy, getDocs } from 'firebase/firestore';
-import { auth, db } from '@/lib/clientFirebase';
+import { auth, db, getAuthInstance } from '@/lib/clientFirebase';
 import TradeTable from '@/components/TradeTable';
 import ExportCSV from '@/components/ExportCSV';
 
 export default function JournalPage() {
-  const [user] = useAuthState(auth || null);
+  const [user, setUser] = useState(null);
   const [trades, setTrades] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Listen to auth state changes
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const instance = getAuthInstance();
+    if (instance) {
+      const unsubscribe = onAuthStateChanged(instance, (user) => {
+        setUser(user);
+      });
+      return () => unsubscribe();
+    }
+  }, []);
 
   useEffect(() => {
     if (!user) return;

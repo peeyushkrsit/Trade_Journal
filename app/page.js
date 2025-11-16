@@ -1,14 +1,40 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth } from '@/lib/clientFirebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth, initializeFirebase, getAuthInstance } from '@/lib/clientFirebase';
 import Link from 'next/link';
 
 export default function LandingPage() {
   const router = useRouter();
-  const [user, loading] = useAuthState(auth || null);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
+  // Ensure Firebase is initialized and listen to auth state
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const initAuth = () => {
+      if (!auth) {
+        initializeFirebase();
+      }
+      const instance = getAuthInstance();
+      if (instance) {
+        // Set up auth state listener
+        const unsubscribe = onAuthStateChanged(instance, (user) => {
+          setUser(user);
+          setLoading(false);
+        });
+        return () => unsubscribe();
+      } else {
+        setTimeout(initAuth, 100);
+      }
+    };
+    
+    const cleanup = initAuth();
+    return cleanup;
+  }, []);
 
   useEffect(() => {
     if (user) {
